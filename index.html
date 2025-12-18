@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公升毫升學習樂園 - 完整統計版</title>
+    <style>
+        :root { --primary: #3498db; --secondary: #e67e22; --bg: #fdfaf2; --success: #27ae60; --error: #e74c3c; --easy: #9b59b6; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: var(--bg); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .app-container { width: 100%; max-width: 500px; text-align: center; }
+        
+        #home-screen { display: block; }
+        #practice-screen { display: none; }
+
+        /* 統計面板樣式 */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; background: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .stat-item { font-size: 14px; color: #666; }
+        .stat-value { font-weight: bold; color: #333; font-size: 16px; }
+        .accuracy-highlight { grid-column: 1 / 3; border-top: 1px solid #eee; padding-top: 5px; color: var(--error); font-size: 18px; }
+
+        .range-setting { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; }
+        .range-val { font-size: 20px; color: var(--primary); font-weight: bold; }
+
+        .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .menu-btn { padding: 15px; font-size: 16px; cursor: pointer; border: 2px solid #ddd; border-radius: 12px; background: white; transition: 0.3s; font-weight: bold; color: #777; }
+        .menu-btn.selected { border-width: 3px; transform: scale(1.05); color: white; }
+        
+        .btn-0.selected { background-color: var(--easy); border-color: #8e44ad; }
+        .btn-1.selected { background-color: var(--primary); border-color: #2980b9; }
+        .btn-2.selected { background-color: var(--secondary); border-color: #d35400; }
+
+        .start-action { padding: 15px 40px; font-size: 20px; background: #2ecc71; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(46,204,113,0.4); }
+        .start-action:disabled { background: #bdc3c7; cursor: not-allowed; }
+
+        .practice-area { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .vertical-calc { display: grid; grid-template-columns: 40px 110px 130px; font-size: 26px; line-height: 60px; margin: 20px auto; width: fit-content; }
+        .unit-label { text-align: center; font-size: 18px; color: #555; border-bottom: 2px solid #ccc; line-height: 30px; font-weight: bold; }
+        
+        input { width: 100px; font-size: 26px; text-align: right; font-family: "Courier New", Courier, monospace; border: 2px solid #ccc; border-radius: 8px; padding: 5px 10px; background: #fffde7; }
+        input.correct { border-color: var(--success) !important; background-color: #eafaf1; }
+        input.wrong { border-color: var(--error) !important; background-color: #fdedec; }
+        
+        .line { grid-column: 1 / 4; border-bottom: 3px solid #333; height: 0; margin: 10px 0; }
+        .btn-home { background: #95a5a6; color: white; margin-top: 20px; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; }
+        .action { padding: 12px 25px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="home-screen">
+        <h1>💧 公升毫升練習場</h1>
+        
+        <div class="range-setting">
+            <span style="font-weight:bold; color:#555;">設定範圍 (最大公升數)</span><br>
+            <input type="range" id="maxLRange" min="10" max="100" value="20" step="10" style="width:80%" oninput="document.getElementById('rangeDisplay').innerText=this.value">
+            <div class="range-val"><span id="rangeDisplay">20</span> 公升</div>
+        </div>
+
+        <p>勾選練習題型（多選）：</p>
+        <div class="menu">
+            <button class="menu-btn btn-0" id="t-0-1" onclick="toggleType('0-1')">0-1 加法(簡單)</button>
+            <button class="menu-btn btn-0" id="t-0-2" onclick="toggleType('0-2')">0-2 減法(簡單)</button>
+            <button class="menu-btn btn-1" id="t-1-1" onclick="toggleType('1-1')">1-1 加法(不進位)</button>
+            <button class="menu-btn btn-1" id="t-1-2" onclick="toggleType('1-2')">1-2 加法(進位)</button>
+            <button class="menu-btn btn-2" id="t-2-1" onclick="toggleType('2-1')">2-1 減法(不退位)</button>
+            <button class="menu-btn btn-2" id="t-2-2" onclick="toggleType('2-2')">2-2 減法(退位)</button>
+        </div>
+
+        <button class="start-action" id="startBtn" disabled onclick="startPractice()">開始練習</button>
+    </div>
+
+    <div id="practice-screen" class="practice-area">
+        <div class="stats-grid">
+            <div class="stat-item">總題數：<span class="stat-value" id="stat-total">0</span></div>
+            <div class="stat-item">一次就對：<span class="stat-value" id="stat-perfect">0</span></div>
+            <div class="stat-item">訂正才對：<span class="stat-value" id="stat-fixed">0</span></div>
+            <div class="stat-item">目前等級：多選模式</div>
+            <div class="stat-value accuracy-highlight">第一次答對率：<span id="stat-accuracy">0</span>%</div>
+        </div>
+
+        <div id="question-text" style="font-size:22px; font-weight:bold; background:#eef7ff; padding:15px; border-radius:10px; margin-bottom:10px;"></div>
+
+        <div class="vertical-calc">
+            <div class="unit-label"></div><div class="unit-label">公升</div><div class="unit-label">毫升</div>
+            <div></div><div><input type="number" id="ansL1"></div><div><input type="number" id="ansMl1"></div>
+            <div id="op-display" style="font-weight:bold; text-align:left; padding-left:5px;">+</div>
+            <div><input type="number" id="ansL2"></div><div><input type="number" id="ansMl2"></div>
+            <div class="line"></div>
+            <div style="font-weight:bold; text-align:left; padding-left:5px;">=</div>
+            <div><input type="number" id="finalL"></div><div><input type="number" id="finalMl"></div>
+        </div>
+
+        <button class="action" id="check-btn" style="background:var(--secondary);" onclick="checkAnswer()">檢查答案</button>
+        <button class="action" id="next-btn" style="background:var(--primary); display:none;" onclick="generateQuestion()">下一題</button>
+        
+        <div id="feedback" style="margin-top:15px; font-size:20px; font-weight:bold; min-height: 30px;"></div>
+        <button class="btn-home" onclick="goHome()">🏠 結束並回到首頁</button>
+    </div>
+</div>
+
+<script>
+    let selectedTypes = [];
+    let correctData = {};
+    let stats = { total: 0, perfect: 0, fixed: 0 };
+    let hasCheckedThisQuest = false;
+    let firstTryError = false;
+
+    function toggleType(type) {
+        const btn = document.getElementById('t-' + type);
+        if (selectedTypes.includes(type)) {
+            selectedTypes = selectedTypes.filter(t => t !== type);
+            btn.classList.remove('selected');
+        } else {
+            selectedTypes.push(type);
+            btn.classList.add('selected');
+        }
+        document.getElementById('startBtn').disabled = selectedTypes.length === 0;
+    }
+
+    function startPractice() {
+        document.getElementById('home-screen').style.display = 'none';
+        document.getElementById('practice-screen').style.display = 'block';
+        // 重置統計數據
+        stats = { total: 0, perfect: 0, fixed: 0 };
+        updateStats();
+        generateQuestion();
+    }
+
+    function goHome() {
+        if(confirm("確定要回首頁嗎？目前的進度與答對率會重置喔！")) {
+            location.reload();
+        }
+    }
+
+    function getEasyNumber(isAdd) {
+        let n1 = "", n2 = "";
+        for(let i=0; i<3; i++) {
+            let d1 = Math.floor(Math.random() * 5) + (i === 0 ? 1 : 0);
+            let d2 = isAdd ? Math.floor(Math.random() * (9 - d1 + 1)) : Math.floor(Math.random() * (d1 + 1));
+            n1 += d1; n2 += d2;
+        }
+        return [parseInt(n1), parseInt(n2)];
+    }
+
+    function generateQuestion() {
+        hasCheckedThisQuest = false;
+        firstTryError = false;
+        document.querySelectorAll('input').forEach(i => { i.value = ""; i.className = ""; });
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('check-btn').style.display = "inline-block";
+        document.getElementById('next-btn').style.display = "none";
+
+        const type = selectedTypes[Math.floor(Math.random() * selectedTypes.length)];
+        const settingMaxL = parseInt(document.getElementById('maxLRange').value);
+        
+        let l1, ml1, l2, ml2, op;
+        
+        if (type.startsWith('0')) { 
+            if (type === '0-1') { l1=r(1,4); l2=r(1,4); op="+"; let res=getEasyNumber(true); ml1=res[0]; ml2=res[1]; }
+            else { l1=r(5,9); l2=r(1,4); op="-"; let res=getEasyNumber(false); ml1=res[0]; ml2=res[1]; }
+        } else {
+            const limit = Math.floor(settingMaxL / 2);
+            if (type === '1-1') { l1=r(1,limit); l2=r(1,limit); ml1=r(100,450); ml2=r(100,450); op="+"; }
+            else if (type === '1-2') { l1=r(1,limit); l2=r(1,limit); ml1=r(600,950); ml2=r(600,950); op="+"; }
+            else if (type === '2-1') { l1=r(limit+1, settingMaxL); l2=r(1,limit); ml1=r(500,950); ml2=r(100,450); op="-"; }
+            else if (type === '2-2') { l1=r(limit+1, settingMaxL); l2=r(1,limit); ml1=r(100,450); ml2=r(500,950); op="-"; }
+        }
+
+        document.getElementById('op-display').innerText = op;
+        let t1 = l1*1000+ml1, t2 = l2*1000+ml2;
+        let resFinal = (op === "+") ? t1+t2 : t1-t2;
+
+        let num2Text = (Math.random()>0.5) ? `${t2}毫升` : `${Math.floor(t2/1000)}公升${t2%1000}毫升`;
+        document.getElementById('question-text').innerText = `${l1}公升${ml1}毫升 ${op} ${num2Text} = ?`;
+
+        correctData = { ansL1:l1, ansMl1:ml1, ansL2:Math.floor(t2/1000), ansMl2:t2%1000, finalL:Math.floor(resFinal/1000), finalMl:resFinal%1000 };
+    }
+
+    function checkAnswer() {
+        let isCorrectNow = true;
+        for (let key in correctData) {
+            let el = document.getElementById(key);
+            let val = el.value === "" ? NaN : parseInt(el.value);
+            if (val === correctData[key]) el.className = "correct";
+            else { el.className = "wrong"; isCorrectNow = false; }
+        }
+
+        // 統計邏輯
+        if (!hasCheckedThisQuest) { // 第一次檢查
+            stats.total++;
+            hasCheckedThisQuest = true;
+            if (isCorrectNow) {
+                stats.perfect++;
+            } else {
+                firstTryError = true;
+            }
+        } else if (isCorrectNow && firstTryError) { // 之後修正正確
+            stats.fixed++;
+            firstTryError = false;
+        }
+
+        if (isCorrectNow) {
+            document.getElementById('feedback').innerText = "⭕ 正確！太棒了！"; 
+            document.getElementById('feedback').style.color = "var(--success)";
+            document.getElementById('check-btn').style.display = "none";
+            document.getElementById('next-btn').style.display = "inline-block";
+        } else {
+            document.getElementById('feedback').innerText = "❌ 還有格子錯了，再想一下！";
+            document.getElementById('feedback').style.color = "var(--error)";
+        }
+        updateStats();
+    }
+
+    function updateStats() {
+        document.getElementById('stat-total').innerText = stats.total;
+        document.getElementById('stat-perfect').innerText = stats.perfect;
+        document.getElementById('stat-fixed').innerText = stats.fixed;
+        let acc = stats.total === 0 ? 0 : Math.round((stats.perfect / stats.total) * 100);
+        document.getElementById('stat-accuracy').innerText = acc;
+    }
+
+    function r(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+</script>
+</body>
+</html>請把介面換成中文
