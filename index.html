@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>公升毫升學習樂園 - 6+6 完備版</title>
+    <title>公升毫升學習樂園 - 強化進位版</title>
     <style>
         :root { --primary: #3498db; --secondary: #e67e22; --bg: #fdfaf2; --success: #27ae60; --error: #e74c3c; --convert: #1abc9c; --advanced: #c0392b; }
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: var(--bg); display: flex; justify-content: center; padding: 20px; margin: 0; }
@@ -25,12 +25,124 @@
         .single-input { width: 180px; height: 55px; font-size: 30px; text-align: center; border: 2px solid #ccc; border-radius: 8px; background: #fffde7; letter-spacing: 2px; }
         .unit-input { width: 80px; height: 45px; font-size: 22px; text-align: center; border: 2px solid #ccc; border-radius: 8px; }
         .vertical-calc { display: grid; grid-template-columns: 40px 110px 130px; font-size: 26px; line-height: 60px; margin: 20px auto; width: fit-content; }
-        .unit-label { text-align: center; font-size: 18px; border-bottom: 2px solid #ccc; font-weight: bold; }
-        .calc-input { width: 100px; font-size: 26px; text-align: right; border: 2px solid #ccc; border-radius: 8px; padding: 5px; background: #fffde7; }
+        .unit-label {
+    text-align: center;
+    font-size: 18px;
+    border-bottom: 2px solid #ccc;
+    font-weight: bold;
+    transition: padding 0.3s; /* 讓移動時有個平滑感 */}
+         .adv-sub-layout .unit-label {
+    padding-bottom: 50px; /* 把字推高，空出位置給兩排輔助格 */
+}
+         .adv-sub-layout .calc-row {
+    margin-top: 60px !important;
+}
+/* 1. #ansMl1, #ansMl2, #finalMl {
+    background-image: linear-gradient(to right, #ccc 1px, transparent 1px) !important;
+    background-size: 33.3% 100% !important;
+    background-repeat: repeat-x !important;
+    background-color: #fffde7 !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    letter-spacing: 8px !important;
+    text-align: right !important;
+    padding-right: 12px !important;
+    width: 100px; /* 確保寬度固定 */
+    font-size: 26px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+}
+
+/* 2. 修正單位標籤在進階模式的位移（改用較穩定的方式） */
+.adv-sub-layout .unit-label {
+    position: relative;
+    top: -45px;
+}
+        .calc-input { 
+          width: 100px; 
+          font-size: 26px;           /* 1. 使用等寬字體，確保每個數字寬度一致 */
+          font-family: 'Courier New', Courier, monospace;       /* 2. 拉大字體間距，讓數字不要擠在一起 */
+          letter-spacing: 8px; 
+          text-align: right; 
+          border: 2px solid #ccc; 
+          border-radius: 8px;           /* 3. 調整內邊距，配合字距後的對齊 */
+          padding: 5px 12px 5px 5px; 
+      }
+        .calc-row {    margin-top: 50px !important; /* 增加行與行之間的距離 */    position: relative;}
         .line { grid-column: 1 / 4; border-bottom: 3px solid #333; margin: 10px 0; }
         .action { padding: 12px 25px; font-size: 18px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; color: white; margin: 5px; }
         .start-action { background: #2ecc71; width: 100%; font-size: 22px; padding: 15px; border-radius: 50px; border: none; color: white; cursor: pointer; margin-top: 10px; }
-    </style>
+        
+        /* 輔助格通用樣式 */
+        .assist-input { position: absolute; width: 30px !important; height: 20px !important; font-size: 12px !important; padding: 0 !important; text-align: center; border: 1px dashed var(--secondary) !important; background: #fffde7 !important; z-index: 10; border-radius: 4px; }
+        .carry-pos { top: -15px; right: 5px; }
+        .borrow-l-pos { top: -15px; right: 5px; }
+      
+        /* 毫升內部的十位百位進位格 */
+        .ml-upper-100 { top: -48px; right: 80px; border-color: #95a5a6 !important; }
+        .ml-upper-10  { top: -48px; right: 50px; border-color: #95a5a6 !important; }
+        .ml-carry-1 { top: -25px; right: 20px; /* 大約在十位數上方 */     }
+        .ml-carry-10 { top: -25px; right: 50px; /* 大約在十位數上方 */     }
+        .ml-carry-100 { top: -25px; right: 80px; /* 大約在百位數上方 */     }
+        /* 劃掉數字的動態效果 */
+#ansMl1, #ansL1 {
+    position: relative;
+}
+/* --- 1. 基礎格子：只保留灰色輔助線 --- */
+#ansL1, #ansL2, #finalL, #ansMl1, #ansMl2, #finalMl {
+    background-color: #fffde7 !important;
+    background-repeat: no-repeat !important;
+    background-size: 100% 100% !important;
+    background-image: 
+        linear-gradient(to right, transparent 33.3%, #ddd 33.3%, #ddd 34.3%, transparent 34.3%),
+        linear-gradient(to right, transparent 66.6%, #ddd 66.6%, #ddd 67.6%, transparent 67.6%) !important;
+}
+/* --- 1. 準備外殼：讓外殼變成可以貼貼紙的狀態 --- */
+.vertical-calc > div {
+    position: relative; /* 這行就像是在外殼塗上膠水，讓貼紙能固定住 */
+}
+
+/* --- 2. 百位貼紙 (before) --- */
+.strike-hundreds::before {
+    content: "";          /* 必須有這行，貼紙才會出現 */
+    position: absolute;   /* 讓貼紙可以自由移動 */
+    left: 15%;            /* 貼在百位數的位置 */
+    top: 15%;             /* 距離頂端一點點 */
+    width: 2px;           /* 紅線的粗細 */
+    height: 70%;          /* 紅線的長度 */
+    background: red;      /* 紅線的顏色 */
+    transform: rotate(25deg); /* 轉動 25 度，變斜線 */
+    z-index: 5;           /* 讓紅線疊在數字上面 */
+    pointer-events: none; /* 讓滑鼠點擊可以穿過紅線，點到後面的格子 */
+}
+
+/* --- 3. 十位貼紙 (after) --- */
+.strike-tens::after {
+    content: "";
+    position: absolute;
+    left: 48%;            /* 貼在十位數的位置 */
+    top: 15%;
+    width: 2px;
+    height: 70%;
+    background: red;
+    transform: rotate(25deg);
+    z-index: 5;
+    pointer-events: none;
+}
+
+/* --- 4. 個位貼紙 (直接畫在格子背景) --- */
+/* 因為 before 和 after 用完了，個位我們就用原本學的方法 */
+#ansMl1.strike-ones {
+    background-image: 
+        linear-gradient(120deg, transparent 81%, red 82%, red 86%, transparent 87%),
+        linear-gradient(to right, transparent 33.3%, #ddd 33.3%, #ddd 34.3%, transparent 34.3%),
+        linear-gradient(to right, transparent 66.6%, #ddd 66.6%, #ddd 67.6%, transparent 67.6%) !important;
+}
+
+/* 公升劃線 (文字刪除線) */
+.strike-l {
+    text-decoration: line-through solid red 4px !important;
+}
+</style>
 </head>
 <body>
 
@@ -63,8 +175,6 @@
             <button class="menu-btn btn-calc" id="t-s-0" onclick="toggleType('s-0')">2-1 減法 (簡單)</button>
             <button class="menu-btn btn-calc" id="t-a-1" onclick="toggleType('a-1')">1-2 加法 (中等)</button>
             <button class="menu-btn btn-calc" id="t-s-1" onclick="toggleType('s-1')">2-2 減法 (中等)</button>
-            <button class="menu-btn btn-calc" id="t-a-2" onclick="toggleType('a-2')">1-3 加法 (困難)</button>
-            <button class="menu-btn btn-calc" id="t-s-2" onclick="toggleType('s-2')">2-3 減法 (困難)</button>
         </div>
         <button class="start-action" id="startBtn" disabled onclick="startApp()">開始練習</button>
     </div>
@@ -87,12 +197,27 @@
             <div id="calc-q-text" style="font-size:18px; font-weight:bold; margin-bottom:15px; background:#eef7ff; padding:10px; border-radius:8px;"></div>
             <div class="vertical-calc">
                 <div class="unit-label"></div><div class="unit-label">公升</div><div class="unit-label">毫升</div>
-                <div></div><div><input type="number" class="calc-input" id="ansL1"></div><div><input type="number" class="calc-input" id="ansMl1"></div>
+                <div></div>
+                <div style="position: relative;">
+                    <input type="number" id="carry-box" class="assist-input carry-pos" style="display:none;" placeholder="+1">
+                    <input type="number" class="calc-input" id="ansL1">
+                </div>
+                <div style="position: relative;">
+                    <input type="number" id="ml-upper-100" class="assist-input ml-upper-100" style="display:none;">
+                    <input type="number" id="ml-upper-10" class="assist-input ml-upper-10" style="display:none;">
+
+                    <input type="number" id="ml-carry-100" class="assist-input ml-carry-100" style="display:none;" value="0">
+                    <input type="number" id="ml-carry-10" class="assist-input ml-carry-10" style="display:none;" value="0">
+                    <input type="number" id="ml-carry-1" class="assist-input ml-carry-1" style="display:none;" value="0">
+                    <input type="number" class="calc-input" id="ansMl1">
+                </div>
                 <div id="op-display" style="font-weight:bold; text-align:left;">+</div>
-                <div><input type="number" class="calc-input" id="ansL2"></div><div><input type="number" class="calc-input" id="ansMl2"></div>
+                <div><input type="number" class="calc-input" id="ansL2"></div>
+                <div><input type="number" class="calc-input" id="ansMl2"></div>
                 <div class="line"></div>
                 <div style="font-weight:bold; text-align:left;">=</div>
-                <div><input type="number" class="calc-input" id="finalL"></div><div><input type="number" class="calc-input" id="finalMl"></div>
+                <div><input type="number" class="calc-input" id="finalL"></div>
+                <div><input type="number" class="calc-input" id="finalMl"></div>
             </div>
             <button class="action" style="background:var(--secondary);" id="calc-check" onclick="checkCalc()">檢查答案</button>
             <button class="action" style="background:var(--primary); display:none;" id="calc-next" onclick="generateQuestion()">下一題</button>
@@ -104,35 +229,25 @@
 
 <script>
     let selectedTypes = [];
-    let currentMode = 'basic';
     let stats = { total: 0, perfect: 0 };
     let correctData = {};
     let isFirstTry = true;
+    let selectedModes = ['basic']; 
+    let currentMode = 'basic';
 
-let selectedModes = ['basic']; // 用來存儲選中的模式，預設選中基礎
-
-function setMode(mode) {
-    // 1. 判斷點擊的模式是否已經在陣列中
-    const index = selectedModes.indexOf(mode);
-    
-    if (index > -1) {
-        // 如果已經選了，就移除它（但要保證至少留一個，不然會沒題目出）
-        if (selectedModes.length > 1) {
-            selectedModes.splice(index, 1);
+    function setMode(mode) {
+        const index = selectedModes.indexOf(mode);
+        if (index > -1) {
+            if (selectedModes.length > 1) selectedModes.splice(index, 1);
+        } else {
+            selectedModes.push(mode);
         }
-    } else {
-        // 如果沒選，就加進去
-        selectedModes.push(mode);
+        document.getElementById('mode-basic').classList.toggle('active', selectedModes.includes('basic'));
+        document.getElementById('mode-adv').classList.toggle('active', selectedModes.includes('adv'));
+        document.getElementById('mode-adv').classList.toggle('adv', selectedModes.includes('adv'));
+        document.getElementById('adv-config').style.display = (selectedModes.includes('adv') ? 'block' : 'none');
     }
-    
-    // 2. 更新按鈕的顏色（CSS class）
-    document.getElementById('mode-basic').classList.toggle('active', selectedModes.includes('basic'));
-    document.getElementById('mode-adv').classList.toggle('active', selectedModes.includes('adv'));
-    document.getElementById('mode-adv').classList.toggle('adv', selectedModes.includes('adv'));
-    
-    // 3. 只要有選「進階」，就顯示拉桿設定
-    document.getElementById('adv-config').style.display = (selectedModes.includes('adv') ? 'block' : 'none');
-}
+
     function toggleType(type) {
         const btn = document.getElementById('t-' + type);
         if (selectedTypes.includes(type)) {
@@ -152,7 +267,7 @@ function setMode(mode) {
     }
 
     function generateQuestion() {
-        isFirstTry = true;
+        isFirstTry = true; 
         document.getElementById('feedback').innerText = "";
         currentMode = selectedModes[Math.floor(Math.random() * selectedModes.length)];
         const type = selectedTypes[Math.floor(Math.random() * selectedTypes.length)];
@@ -166,17 +281,10 @@ function setMode(mode) {
             document.getElementById('practice-screen').style.display = 'block';
             setupCalcQuestion(type);
         }
-        document.querySelector(`[id$="-check"]`).style.display = 'inline-block';
-        document.querySelector(`[id$="-next"]`).style.display = 'none';
-
-        setTimeout(() => {
-            const digitInputs = document.querySelectorAll('.digit-input');
-            digitInputs.forEach((input, index) => {
-                input.oninput = function() {
-                    if (this.value.length >= 1 && index < digitInputs.length - 1) digitInputs[index+1].focus();
-                };
-            });
-        }, 100);
+        document.getElementById('conv-check').style.display = 'inline-block';
+        document.getElementById('calc-check').style.display = 'inline-block';
+        document.getElementById('conv-next').style.display = 'none';
+        document.getElementById('calc-next').style.display = 'none';
     }
 
     function setupConvertQuestion(type) {
@@ -186,76 +294,186 @@ function setMode(mode) {
         let l = (currentMode === 'basic') ? r(1, 9) : r(11, parseInt(document.getElementById('maxLRange').value));
         let ml, total;
         switch(type) {
-            case 'c-01': qText.innerText = `${l} 公升 = ? 毫升`; total = (l * 1000).toString(); if (currentMode === 'basic') createDigitInputs(4, area); else area.innerHTML = `<input type="number" id="c-ml-single" class="single-input"> 毫升`; correctData = { mode: (currentMode === 'basic'?'digits':'single'), val: total }; break;
-            case 'c-02': qText.innerText = `${l * 1000} 毫升 = ? 公升`; area.innerHTML = `<input type="number" id="c-l" class="unit-input"> 公升`; correctData = { mode: 'units', l: l, ml: 0 }; break;
-            case 'c-11': case 'c-12': ml = (type === 'c-11') ? r(111, 999) : r(1, 99); qText.innerText = `${l} 公升 ${ml} 毫升 = ? 毫升`; total = (l * 1000 + ml).toString(); if (currentMode === 'basic') createDigitInputs(4, area); else area.innerHTML = `<input type="number" id="c-ml-single" class="single-input"> 毫升`; correctData = { mode: (currentMode === 'basic'?'digits':'single'), val: total.padStart(4, '0') }; break;
-            case 'c-21': case 'c-22': ml = (type === 'c-21') ? r(111, 999) : r(1, 99); total = l * 1000 + ml; qText.innerText = `${total} 毫升 = ? 公升 ? 毫升`; area.innerHTML = `<input type="number" id="c-l" class="unit-input"> 公升 <input type="number" id="c-ml" class="unit-input"> 毫升`; correctData = { mode: 'units', l: l, ml: ml }; break;
+            case 'c-01': 
+                qText.innerText = `${l} 公升 = ? 毫升`; 
+                total = (l * 1000).toString(); 
+                if (currentMode === 'basic') createDigitInputs(4, area); 
+                else area.innerHTML = `<input type="number" id="c-ml-single" class="single-input"> 毫升`; 
+                correctData = { mode: (currentMode === 'basic'?'digits':'single'), val: total }; 
+                break;
+            case 'c-02': 
+                qText.innerText = `${l * 1000} 毫升 = ? 公升`; 
+                area.innerHTML = `<input type="number" id="c-l" class="unit-input"> 公升`; 
+                correctData = { mode: 'units', l: l, ml: 0 }; 
+                break;
+            case 'c-11': case 'c-12': 
+                ml = (type === 'c-11') ? r(111, 999) : r(1, 99); 
+                qText.innerText = `${l} 公升 ${ml} 毫升 = ? 毫升`; 
+                total = (l * 1000 + ml).toString(); 
+                if (currentMode === 'basic') createDigitInputs(4, area); 
+                else area.innerHTML = `<input type="number" id="c-ml-single" class="single-input"> 毫升`; 
+                correctData = { mode: (currentMode === 'basic'?'digits':'single'), val: total.padStart(4, '0') }; 
+                break;
+            case 'c-21': case 'c-22': 
+                ml = (type === 'c-21') ? r(111, 999) : r(1, 99); 
+                total = l * 1000 + ml; 
+                qText.innerText = `${total} 毫升 = ? 公升 ? 毫升`; 
+                area.innerHTML = `<input type="number" id="c-l" class="unit-input"> 公升 <input type="number" id="c-ml" class="unit-input"> 毫升`; 
+                correctData = { mode: 'units', l: l, ml: ml }; 
+                break;
         }
     }
 
     function createDigitInputs(num, container) {
+        container.innerHTML = "";
         for (let i = 0; i < num; i++) {
-            let input = document.createElement('input'); input.type = "text"; input.inputMode = "numeric"; input.maxLength = 1;
+            let input = document.createElement('input'); 
+            input.type = "text"; input.inputMode = "numeric"; input.maxLength = 1;
             input.className = "digit-input"; input.id = "digit-" + i;
             container.appendChild(input);
         }
         container.innerHTML += " 毫升";
+        setTimeout(() => {
+            const digitInputs = document.querySelectorAll('.digit-input');
+            digitInputs.forEach((input, index) => {
+                input.oninput = function() {
+                    if (this.value.length >= 1 && index < digitInputs.length - 1) digitInputs[index+1].focus();
+                };
+            });
+        }, 50);
     }
 
-    function setupCalcQuestion(type) {
-        document.querySelectorAll('.calc-input').forEach(i => { i.value = ""; i.style.borderColor = "#ccc"; });
-        let op = type.startsWith('a') ? "+" : "-";
-        let l1, l2, ml1 = 0, ml2 = 0;
-        const maxLimit = (currentMode === 'basic') ? 9 : parseInt(document.getElementById('maxLRange').value);
+function setupCalcQuestion(type) {
+    const mlBox = document.getElementById('ansMl1');
+    const lBox = document.getElementById('ansL1');
+    const cBox = document.getElementById('carry-box');
+    const mc100 = document.getElementById('ml-carry-100');
+    const mc10 = document.getElementById('ml-carry-10');
+    const mc1 = document.getElementById('ml-carry-1');
+    const up100 = document.getElementById('ml-upper-100');
+    const up10 = document.getElementById('ml-upper-10');
+    
+    // 獲取最外層容器，用來切換佈局樣式
+    const calcContainer = document.querySelector('.vertical-calc');
 
-        l1 = (op === "+") ? r(1, Math.floor(maxLimit/2)) : r(Math.floor(maxLimit/2)+1, maxLimit);
-        l2 = r(1, Math.floor(maxLimit/2));
+    // 1. 初始化所有輸入框與劃線樣式
+    document.querySelectorAll('.calc-input').forEach(i => { 
+        i.value = ""; 
+        i.style.borderColor = "#ccc"; 
+        i.classList.remove('strikethrough', 'strike-l', 'strike-hundreds', 'strike-tens', 'strike-ones'); 
+    });
 
-        if (type.includes('-0')) { // 不進退位
-            let res = getSimpleNums(op === "+"); ml1 = res[0]; ml2 = res[1];
-        } else if (type === 'a-1') { // 加法進位
-            ml1 = r(500, 950); ml2 = r(500, 950);
-        } else if (type === 's-1') { // 減法退位 (普通)
-            ml1 = r(50, 400); ml2 = r(500, 950);
-        } else if (type === 'a-2') { // 加法 (湊整千)
-            ml1 = r(100, 900); ml2 = 1000 - ml1;
-        } else if (type === 's-2') { // 減法 (整公升借位)
-            ml1 = 0; ml2 = r(50, 950);
+    let op = type.startsWith('a') ? "+" : "-";
+    const maxLimit = (currentMode === 'basic') ? 9 : parseInt(document.getElementById('maxLRange').value);
+    let l1, l2, ml1, ml2;
+    let isAdvanced = !(type === 'a-0' || type === 's-0'); 
+
+    // --- 關鍵判斷：是否為進階減法 ---
+    const isAdvSub = (isAdvanced && op === "-");
+
+    // 2. 佈局切換：只有進階減法才加上特殊的樣式標籤
+    if (isAdvSub) {
+        calcContainer.classList.add('adv-sub-layout');
+    } else {
+        calcContainer.classList.remove('adv-sub-layout');
+    }
+
+    // 題目數字生成邏輯 (保持不變)
+    if (!isAdvanced) { 
+        let res = getSimpleNums(op === "+"); ml1 = res[0]; ml2 = res[1];
+    } else {
+        if (op === "+") { ml1 = r(1, 999); ml2 = r(1000 - ml1, 999); } 
+        else { ml2 = r(101, 999); ml1 = r(0, ml2 - 1); }
+    }
+    if (op === "+") {
+        let carry = (ml1 + ml2 >= 1000) ? 1 : 0;
+        l1 = r(0, maxLimit - carry); l2 = r(0, maxLimit - l1 - carry);
+    } else {
+        let borrow = (ml1 < ml2) ? 1 : 0;
+        l2 = r(0, maxLimit - borrow); l1 = r(l2 + borrow, maxLimit);
+    }
+
+    let t1 = l1 * 1000 + ml1, t2 = l2 * 1000 + ml2;
+    let finalVal = (op === "+") ? t1 + t2 : t1 - t2;
+    
+    document.getElementById('op-display').innerText = op;
+    document.getElementById('calc-q-text').innerText = `${l1}公升${ml1}毫升 ${op} ${l2}公升${ml2}毫升 = ?`;
+    
+    correctData = { ansL1: l1, ansMl1: ml1, ansL2: l2, ansMl2: ml2, finalL: Math.floor(finalVal/1000), finalMl: finalVal%1000 };
+
+    // 3. 輔助格初始化 (全部先藏起來)
+    [cBox, mc100, mc10, mc1, up100, up10].forEach(el => { 
+        if(el) { 
+            el.style.display = 'none'; 
+            el.value = ""; 
+            el.oninput = null;
+            el.onfocus = null;
+            el.style.borderColor = "#ccc";
         }
+    });
 
-        document.getElementById('op-display').innerText = op;
-        let t1 = l1*1000 + ml1, t2 = l2*1000 + ml2;
-        let finalVal = (op === "+") ? t1+t2 : t1-t2;
-        document.getElementById('calc-q-text').innerText = `${l1}公升${ml1}毫升 ${op} ${Math.floor(t2/1000)}公升${t2%1000}毫升 = ?`;
-        correctData = { ansL1:l1, ansMl1:ml1, ansL2:Math.floor(t2/1000), ansMl2:t2%1000, finalL:Math.floor(finalVal/1000), finalMl:finalVal%1000 };
-    }
+    // 4. 進階模式連動邏輯
+    if (isAdvanced) {
+        // 加法進階只顯公升格；減法進階顯示全部
+        cBox.style.display = 'block';
+        cBox.value = (op === "-") ? "0" : "0";
+    // 2. 毫升進位格：加法只需要「進百位」和「進十位」
+        // mc100 是在百位上方，mc10 是在十位上方
+        [mc100, mc10].forEach(el => { if(el) el.style.display = 'block'; });
+        if (op === "-") {
+            // 顯示兩層毫升輔助格
+            [up100, up10, mc100, mc10, mc1].forEach(el => { if(el) el.style.display = 'block'; });
 
-    function checkConvert() {
-        let ok = true;
-        if (correctData.mode === 'digits') {
-            for (let i = 0; i < 4; i++) {
-                let el = document.getElementById('digit-' + i);
-                if (el.value === correctData.val[i]) el.style.borderColor = "var(--success)";
-                else { el.style.borderColor = "var(--error)"; ok = false; }
-            }
-        } else if (correctData.mode === 'single') {
-            let el = document.getElementById('c-ml-single');
-            if (parseInt(el.value || 0) === parseInt(correctData.val)) el.style.borderColor = "var(--success)";
-            else { el.style.borderColor = "var(--error)"; ok = false; }
+            // (A) 公升劃線
+            cBox.oninput = () => { lBox.classList.toggle('strike-l', cBox.value !== "0"); };
+
+            // (B) 點擊自動變 10
+            [up100, up10, mc1].forEach(h => {
+                if(h) {
+                    h.onfocus = function() {
+                        if (this.value === "" || this.value === "0") { 
+                            this.value = "10";
+                            this.dispatchEvent(new Event('input'));
+                        }
+                    };
+                }
+            });
+
+            // (C) 精確劃線連動
+           const checkLines = () => {
+    // mlBox 是那個輸入數字的格子
+    // mlBox.parentElement 就是包住它的「外殼」
+    const parent = mlBox.parentElement; 
+
+    // 如果「百位輔助格」有填東西，就在「外殼」貼上百位斜線標籤
+    parent.classList.toggle('strike-hundreds', (up100.value !== "" || mc100.value !== ""));
+    
+    // 如果「十位輔助格」有填東西，就在「外殼」貼上十位斜線標籤
+    parent.classList.toggle('strike-tens', (up10.value !== "" || mc10.value !== ""));
+    
+    // 個位還是留在格子自己身上
+    mlBox.classList.toggle('strike-ones', (mc1.value !== ""));
+};
+
+            [up100, up10, mc100, mc10, mc1].forEach(h => {
+                if(h) h.oninput = checkLines;
+            });
+
+            correctData["carry-box"] = l1 - 1;
         } else {
-            let lEl = document.getElementById('c-l'), mlEl = document.getElementById('c-ml');
-            if (parseInt(lEl.value || 0) === correctData.l) lEl.style.borderColor = "var(--success)";
-            else { lEl.style.borderColor = "var(--error)"; ok = false; }
-            if (mlEl && parseInt(mlEl.value || 0) !== correctData.ml) { mlEl.style.borderColor = "var(--error)"; ok = false; }
-            else if (mlEl) mlEl.style.borderColor = "var(--success)";
+            // 加法：不劃線，但保留輔助格讓學生填進位
+            [up100, up10, mc1].forEach(el => { if(el) el.style.display = 'none'; });
+            lBox.classList.remove('strike-l');
+            mlBox.classList.remove('strike-hundreds', 'strike-tens', 'strike-ones');
         }
-        processResult(ok, 'conv');
     }
-
+}
     function checkCalc() {
         let ok = true;
         for (let key in correctData) {
             let el = document.getElementById(key);
+            if (!el) continue;
+            // 這裡會檢查 ansL1, ansMl1, ansL2, ansMl2, finalL, finalMl 以及退位的 borrow 盒
             if (parseInt(el.value || 0) === correctData[key]) el.style.borderColor = "var(--success)";
             else { el.style.borderColor = "var(--error)"; ok = false; }
         }
@@ -263,11 +481,20 @@ function setMode(mode) {
     }
 
     function processResult(isCorrect, mode) {
-        if (isFirstTry) { stats.total++; if (isCorrect) stats.perfect++; isFirstTry = false; }
-        updateStats();
+        if (isFirstTry) {
+            stats.total++; 
+            if (isCorrect) stats.perfect++;
+            isFirstTry = false;
+            updateStats();
+        }
         let fb = document.getElementById('feedback');
-        if (isCorrect) { fb.innerText = "⭕ 正確！"; fb.style.color = "var(--success)"; document.getElementById(mode + '-next').style.display = 'inline-block'; document.getElementById(mode + '-check').style.display = 'none'; }
-        else { fb.innerText = "❌ 再檢查看看！"; fb.style.color = "var(--error)"; }
+        if (isCorrect) {
+            fb.innerText = "⭕ 正確！"; fb.style.color = "var(--success)";
+            document.getElementById(mode + '-next').style.display = 'inline-block';
+            document.getElementById(mode + '-check').style.display = 'none';
+        } else {
+            fb.innerText = "❌ 再檢查看看！"; fb.style.color = "var(--error)";
+        }
     }
 
     function updateStats() {
@@ -280,7 +507,8 @@ function setMode(mode) {
     function getSimpleNums(isAdd) {
         let a = "", b = "";
         for(let i=0; i<3; i++) {
-            let d1 = r(1, 4); let d2 = isAdd ? r(1, 4) : r(1, d1);
+            let d1 = r(0, 9), d2;
+            if (isAdd) d2 = r(0, 9 - d1); else d2 = r(0, d1);
             a += d1; b += d2;
         }
         return [parseInt(a), parseInt(b)];
