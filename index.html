@@ -61,7 +61,7 @@
           width: 100px; 
           font-size: 26px;           /* 1. 使用等寬字體，確保每個數字寬度一致 */
           font-family: 'Courier New', Courier, monospace;       /* 2. 拉大字體間距，讓數字不要擠在一起 */
-          letter-spacing: 8px; 
+          letter-spacing: 10px; 
           text-align: right; 
           border: 2px solid #ccc; 
           border-radius: 8px;           /* 3. 調整內邊距，配合字距後的對齊 */
@@ -127,15 +127,6 @@
     transform: rotate(25deg);
     z-index: 5;
     pointer-events: none;
-}
-
-/* --- 4. 個位貼紙 (直接畫在格子背景) --- */
-/* 因為 before 和 after 用完了，個位我們就用原本學的方法 */
-#ansMl1.strike-ones {
-    background-image: 
-        linear-gradient(120deg, transparent 81%, red 82%, red 86%, transparent 87%),
-        linear-gradient(to right, transparent 33.3%, #ddd 33.3%, #ddd 34.3%, transparent 34.3%),
-        linear-gradient(to right, transparent 66.6%, #ddd 66.6%, #ddd 67.6%, transparent 67.6%) !important;
 }
 
 /* 公升劃線 (文字刪除線) */
@@ -266,9 +257,40 @@
         generateQuestion();
     }
 
-    function generateQuestion() {
+function generateQuestion() {
         isFirstTry = true; 
         document.getElementById('feedback').innerText = "";
+
+        // --- 1. 【新增：擦黑板】清空輔助格數值與邊框顏色 ---
+        const allAssists = [
+            document.getElementById('carry-box'),
+            document.getElementById('ml-upper-100'),
+            document.getElementById('ml-upper-10'),
+            document.getElementById('ml-carry-100'),
+            document.getElementById('ml-carry-10'),
+            document.getElementById('ml-carry-1')
+        ];
+        allAssists.forEach(el => {
+            if (el) {
+                el.value = "";              
+                el.style.borderColor = "#ccc"; 
+            }
+        });
+
+        // --- 2. 【新增：撕掉貼紙】移除紅斜線 ---
+        const mlBox = document.getElementById('ansMl1');
+        const lBox = document.getElementById('ansL1');
+        if (mlBox) {
+            // 移除父層(外殼)的百位與十位紅線類別
+            mlBox.parentElement.classList.remove('strike-hundreds', 'strike-tens');
+            // 移除個位紅線(如果有)
+            mlBox.classList.remove('strike-ones');
+        }
+        if (lBox) {
+            lBox.classList.remove('strike-l');
+        }
+        // --- 擦黑板動作結束 ---
+
         currentMode = selectedModes[Math.floor(Math.random() * selectedModes.length)];
         const type = selectedTypes[Math.floor(Math.random() * selectedTypes.length)];
         
@@ -286,7 +308,6 @@
         document.getElementById('conv-next').style.display = 'none';
         document.getElementById('calc-next').style.display = 'none';
     }
-
     function setupConvertQuestion(type) {
         const area = document.getElementById('conv-input-area');
         const qText = document.getElementById('conv-q-text');
@@ -383,7 +404,7 @@ function setupCalcQuestion(type) {
         let res = getSimpleNums(op === "+"); ml1 = res[0]; ml2 = res[1];
     } else {
         if (op === "+") { ml1 = r(1, 999); ml2 = r(1000 - ml1, 999); } 
-        else { ml2 = r(101, 999); ml1 = r(0, ml2 - 1); }
+      else { ml2 = r(1, 999); ml1 = r(0, ml2 - 1); }
     }
     if (op === "+") {
         let carry = (ml1 + ml2 >= 1000) ? 1 : 0;
@@ -406,6 +427,8 @@ function setupCalcQuestion(type) {
         if(el) { 
             el.style.display = 'none'; 
             el.value = ""; 
+            el.type = "number"; // 確保是數字型態
+            el.min = "0";       // 限制最小值為 0
             el.oninput = null;
             el.onfocus = null;
             el.style.borderColor = "#ccc";
@@ -446,13 +469,10 @@ function setupCalcQuestion(type) {
     const parent = mlBox.parentElement; 
 
     // 如果「百位輔助格」有填東西，就在「外殼」貼上百位斜線標籤
-    parent.classList.toggle('strike-hundreds', (up100.value !== "" || mc100.value !== ""));
+    parent.classList.toggle('strike-hundreds', (up10.value !== "" || mc100.value !== ""));
     
     // 如果「十位輔助格」有填東西，就在「外殼」貼上十位斜線標籤
-    parent.classList.toggle('strike-tens', (up10.value !== "" || mc10.value !== ""));
-    
-    // 個位還是留在格子自己身上
-    mlBox.classList.toggle('strike-ones', (mc1.value !== ""));
+    parent.classList.toggle('strike-tens', (mc1.value !== ""));    
 };
 
             [up100, up10, mc100, mc10, mc1].forEach(h => {
@@ -468,18 +488,40 @@ function setupCalcQuestion(type) {
         }
     }
 }
-    function checkCalc() {
-        let ok = true;
-        for (let key in correctData) {
-            let el = document.getElementById(key);
-            if (!el) continue;
-            // 這裡會檢查 ansL1, ansMl1, ansL2, ansMl2, finalL, finalMl 以及退位的 borrow 盒
-            if (parseInt(el.value || 0) === correctData[key]) el.style.borderColor = "var(--success)";
-            else { el.style.borderColor = "var(--error)"; ok = false; }
+function checkCalc() {
+    let ok = true;
+    // 定義哪些格是「必填且要對」的正式答案
+    const finalKeys = ['ansL1', 'ansMl1', 'ansL2', 'ansMl2', 'finalL', 'finalMl'];
+    
+    // 1. 只檢查這 6 格
+    finalKeys.forEach(key => {
+        let el = document.getElementById(key);
+        if (el) {
+            if (parseInt(el.value || 0) === correctData[key]) {
+                el.style.borderColor = "var(--success)";
+            } else {
+                el.style.borderColor = "var(--error)";
+                ok = false;
+            }
         }
-        processResult(ok, 'calc');
-    }
+    });
 
+    // 2. 輔助格的部分：我們讓它「有對就變綠，沒對也不算錯」
+    const assistKeys = ['carry-box', 'ml-upper-100', 'ml-upper-10', 'ml-carry-100', 'ml-carry-10', 'ml-carry-1'];
+    assistKeys.forEach(key => {
+        let el = document.getElementById(key);
+        if (el && el.value !== "") { // 學生有填才檢查
+            if (parseInt(el.value) === correctData[key]) {
+                el.style.borderColor = "var(--success)";
+            } else {
+                // 如果填錯，可以給個淡淡的橘色提醒，但不要讓 ok = false
+                el.style.borderColor = "var(--secondary)"; 
+            }
+        }
+    });
+
+    processResult(ok, 'calc');
+}
     function processResult(isCorrect, mode) {
         if (isFirstTry) {
             stats.total++; 
