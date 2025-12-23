@@ -308,33 +308,40 @@ function generateQuestion() {
         document.getElementById('conv-next').style.display = 'none';
         document.getElementById('calc-next').style.display = 'none';
     }
-    function setupConvertQuestion(type) {
+function setupConvertQuestion(type) {
         const area = document.getElementById('conv-input-area');
         const qText = document.getElementById('conv-q-text');
         area.innerHTML = "";
-        let l = (currentMode === 'basic') ? r(1, 9) : r(11, parseInt(document.getElementById('maxLRange').value));
+        
+        // 取得公升範圍
+        let maxL = parseInt(document.getElementById('maxLRange').value) || 10;
+        let l = (currentMode === 'basic') ? r(1, 9) : r(11, maxL);
         let ml, total;
+
         switch(type) {
             case 'c-01': 
                 qText.innerText = `${l} 公升 = ? 毫升`; 
-                total = (l * 1000).toString(); 
+                total = l * 1000; 
                 if (currentMode === 'basic') createDigitInputs(4, area); 
                 else area.innerHTML = `<input type="number" id="c-ml-single" class="single-input"> 毫升`; 
                 correctData = { mode: (currentMode === 'basic'?'digits':'single'), val: total }; 
                 break;
+
             case 'c-02': 
                 qText.innerText = `${l * 1000} 毫升 = ? 公升`; 
                 area.innerHTML = `<input type="number" id="c-l" class="unit-input"> 公升`; 
                 correctData = { mode: 'units', l: l, ml: 0 }; 
                 break;
+
             case 'c-11': case 'c-12': 
                 ml = (type === 'c-11') ? r(111, 999) : r(1, 99); 
                 qText.innerText = `${l} 公升 ${ml} 毫升 = ? 毫升`; 
-                total = (l * 1000 + ml).toString(); 
+                total = l * 1000 + ml; 
                 if (currentMode === 'basic') createDigitInputs(4, area); 
                 else area.innerHTML = `<input type="number" id="c-ml-single" class="single-input"> 毫升`; 
-                correctData = { mode: (currentMode === 'basic'?'digits':'single'), val: total.padStart(4, '0') }; 
+                correctData = { mode: (currentMode === 'basic'?'digits':'single'), val: total }; 
                 break;
+
             case 'c-21': case 'c-22': 
                 ml = (type === 'c-21') ? r(111, 999) : r(1, 99); 
                 total = l * 1000 + ml; 
@@ -345,6 +352,59 @@ function generateQuestion() {
         }
     }
 
+    function checkConvert() {
+        let ok = true;
+        const mode = correctData.mode;
+
+        if (mode === 'digits') {
+            let userValStr = "";
+            for (let i = 0; i < 4; i++) {
+                let el = document.getElementById("digit-" + i);
+                userValStr += el.value;
+                // 逐格變色回饋
+                let correctDigit = correctData.val.toString().padStart(4, '0')[i];
+                if (el.value === correctDigit) {
+                    el.style.borderColor = "var(--success)";
+                } else {
+                    el.style.borderColor = "var(--error)";
+                    ok = false;
+                }
+            }
+            // 二次確認總值
+            if (parseInt(userValStr) !== correctData.val) ok = false;
+
+        } else if (mode === 'single') {
+            let el = document.getElementById('c-ml-single');
+            if (parseInt(el.value || 0) === correctData.val) {
+                el.style.borderColor = "var(--success)";
+            } else {
+                el.style.borderColor = "var(--error)";
+                ok = false;
+            }
+        } else if (mode === 'units') {
+            let elL = document.getElementById('c-l');
+            let elMl = document.getElementById('c-ml');
+
+            if (parseInt(elL.value || 0) === correctData.l) {
+                elL.style.borderColor = "var(--success)";
+            } else {
+                elL.style.borderColor = "var(--error)";
+                ok = false;
+            }
+
+            if (elMl) {
+                if (parseInt(elMl.value || 0) === correctData.ml) {
+                    elMl.style.borderColor = "var(--success)";
+                } else {
+                    elMl.style.borderColor = "var(--error)";
+                    ok = false;
+                }
+            }
+        }
+
+        // 重要：這行會切換按鈕並記錄統計資料
+        processResult(ok, 'conv');
+    }
     function createDigitInputs(num, container) {
         container.innerHTML = "";
         for (let i = 0; i < num; i++) {
@@ -560,3 +620,4 @@ function checkCalc() {
 </script>
 </body>
 </html>
+
